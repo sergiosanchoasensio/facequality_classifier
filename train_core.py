@@ -11,7 +11,7 @@ def sym_cross_entropy(labels, predictions, class_weights=1.0):
     return - tf.reduce_sum(labels * tf.log(predictions + np.finfo(np.float32).eps) * class_weights, 1) - tf.reduce_sum((1.0 - labels) * tf.log((1.0 - predictions) + np.finfo(np.float32).eps) * class_weights, 1)
 
 
-def loss(labels, preds, features_out, w_to_reg=[]):
+def loss(labels, preds, labels_blur, preds_blur, features_out, w_to_reg=[]):
     """L2 loss
 
     Add L2Loss to all the trainable variables.
@@ -27,20 +27,36 @@ def loss(labels, preds, features_out, w_to_reg=[]):
     """
 
     # total loss per crop
-    loss = sym_cross_entropy(labels, preds)
-    loss = tf.reduce_mean(loss, 0)
-    loss = tf.identity(loss, name='loss_ce')
+    loss_orientation = sym_cross_entropy(labels, preds)
+    loss_orientation = tf.reduce_mean(loss_orientation, 0)
+    loss_orientation = tf.identity(loss_orientation, name='loss_ce_orientation')
+    try:
+        loss_blur = sym_cross_entropy(labels_blur, preds_blur)
+    except:
+        import pdb;pdb.set_trace()
+    loss_blur = tf.reduce_mean(loss_blur, 0)
+    loss_blur = tf.identity(loss_blur, name='loss_ce_blur')
+    loss = params.LAMBDA_ORIENTATION * loss_orientation + params.LAMBDA_BLUR * loss_blur
     tf.add_to_collection('losses', loss)
 
     # feature reciprocal norm
     if params.LAMBDAfrn != 0.0:
+
         lab_id = tf.argmax(labels, axis=1)
         pre_id = tf.argmax(preds, axis=1)
         h_i = tf.cast(tf.equal(lab_id, pre_id), dtype=tf.float32)
         n_i = tf.reduce_mean(preds ** 2, axis=1)
-        frn_loss_color = params.LAMBDAfrn * tf.reduce_mean(h_i / (n_i + np.finfo(np.float32).eps))
-        frn_loss_color = tf.identity(frn_loss_color, name='loss_featureReciprocalNorm_color')
-        tf.add_to_collection('losses', frn_loss_color)
+        frn_loss = params.LAMBDAfrn * tf.reduce_mean(h_i / (n_i + np.finfo(np.float32).eps))
+        frn_loss = tf.identity(frn_loss, name='loss_featureReciprocalNorm')
+
+        lab_id_blur = tf.argmax(labels_blur, axis=1)
+        pre_id_blur = tf.argmax(preds_blur, axis=1)
+        h_i_blur = tf.cast(tf.equal(lab_id_blur, pre_id_blur), dtype=tf.float32)
+        n_i_blur = tf.reduce_mean(preds_blur ** 2, axis=1)
+        frn_loss_blur = params.LAMBDAfrn * tf.reduce_mean(h_i_blur / (n_i_blur + np.finfo(np.float32).eps))
+        frn_loss_blur = tf.identity(frn_loss_blur, name='loss_featureReciprocalNorm_blur')
+
+        tf.add_to_collection('losses', 0.5 * frn_loss + 0.5 * frn_loss_blur)
 
     return tf.add_n(tf.get_collection('losses'), name='loss_total')
 

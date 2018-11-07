@@ -142,7 +142,7 @@ def def_init_sttdev(activation_function, input_n_feat, set_max=None):
     return stddev
 
 
-def inference(images, labels, trainval_flag):
+def inference(images, labels, labels_blur, trainval_flag):
     """Build the model
 
     Args:
@@ -361,4 +361,14 @@ def inference(images, labels, trainval_flag):
         weights_data['w_SoftMax'] = weights
         weights_data['b_SoftMax'] = biases
 
-    return out_pred, fc8, weights_data, images, labels 
+    with tf.variable_scope('outSoftmax_blur') as scope:
+        weights_blur = _variable_with_weight_decay('weights', [n_feat['fc8'], len(params.LABELS_BLUR)],
+                                              stddev=def_init_sttdev('linear', input_n_feat=int(fc8.shape[-1]), set_max=0.01), wd=params.L2_WEIGHT_DECAY_SOFTMAX)
+        biases_blur = _variable_on_cpu('biases', [len(params.LABELS)], tf.constant_initializer(0.0))
+        out_prob_blur = tf.add(tf.matmul(fc8, weights), biases_blur, name=scope.name)
+        out_pred_blur = tf.nn.softmax(out_prob_blur)
+        _activation_summary(out_pred_blur)
+        weights_data['w_SoftMax_blur'] = weights_blur
+        weights_data['b_SoftMax_blur'] = biases_blur
+
+    return out_pred, out_pred_blur, fc8, weights_data, images, labels, labels_blur

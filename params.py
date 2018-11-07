@@ -9,10 +9,10 @@ from sklearn.utils import shuffle
 
 BATCH_SIZE = 16
 MAX_STEPS = int(1e+8)
-L2_WEIGHT_DECAY = 1e-1 #None # 1e-3
-L2_WEIGHT_DECAY_SOFTMAX = 1e-1 # None # 1e-3
+L2_WEIGHT_DECAY = 1e-1
+L2_WEIGHT_DECAY_SOFTMAX = 1e-1
 TOGGLE_DROPOUT = False
-LAMBDAfrn = 0.0  # 1e-3
+LAMBDAfrn = 1e-3
 LAMBDAfrn /= 2 
 INITIAL_LEARNING_RATE = 1e-4
 DECAY_STEPS = 15000
@@ -53,7 +53,8 @@ MOVING_AVERAGE_DECAY = 0.9999
 
 NUM_EPOCHS_PER_DECAY = 36
 
-LABELS = ['high_quality', 'low_quality']
+LABELS = ['frontal', 'profile']
+LABELS_BLUR = ['not blurry', 'blurry']
 
 eval_size = 500
 DATA_LIST = MAIN_PATH + 'XGBoost_pred_on_vggface2_test.csv'
@@ -100,4 +101,7 @@ NEW_VARIABLES = []
 
 TRAINABLE_VARIABLES = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'conv6', 'conv7', 'fc8', 'outSoftmax']
 
-EVA_FREQ = 1000
+EVA_FREQ = 2
+
+LAMBDA_ORIENTATION = 0.5  # how much importance we give to the orientation in the loss
+LAMBDA_BLUR = 0.5

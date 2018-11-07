@@ -46,18 +46,16 @@ def random_patch(image):
         return image
 
 
-def blur(image):
-    ks = random.randint(3, 9)
+def blur(image, ks):
     kernel = np.ones((ks, ks), np.float32) / ks ** 2
     return cv2.filter2D(image, -1, kernel)
 
 
-def motion_blur(image):
-    size = random.randint(5, 25)
+def motion_blur(image, ks):
     angle = random.randint(1, 360)
-    kernel_motion_blur = np.zeros((size, size))
-    kernel_motion_blur[int((size - 1) / 2), :] = np.ones(size)
-    kernel_motion_blur = kernel_motion_blur / size
+    kernel_motion_blur = np.zeros((ks, ks))
+    kernel_motion_blur[int((ks - 1) / 2), :] = np.ones(ks)
+    kernel_motion_blur = kernel_motion_blur / ks
     rotated_k = imutils.rotate(kernel_motion_blur, angle)
     return cv2.filter2D(image, -1, rotated_k)
 

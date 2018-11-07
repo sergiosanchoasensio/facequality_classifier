@@ -7,7 +7,11 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import ast
-from augmentations_np import augment_tr
+from augmentations_np import augment_tr, blur, motion_blur
+from random import randint
+
+
+np.random.seed(0)
 
 
 def hflip_imgs(image):
@@ -99,19 +103,19 @@ def metric_list(metric, lines, steps=False):
 def compare_val_ts(evals_dir):
     metrics = ['Accuracy', 'Average precision', 'Average sensitivity', 'Average F1']
     for m in metrics:
-	    cols = []
-	    for path in [evals_dir + 'log_train_small.txt', evals_dir + 'log_validation.txt']:
-		with open(path) as f:
-		    lines = f.readlines()
-		cols += [metric_list(m, lines)]
-		steps = metric_list('step', lines, True)
-	    fig = plt.figure()
-	    fig.suptitle(m)
-	    line_up, = plt.plot(steps, cols[0], '--', label='training', color='k')
-	    line_down, = plt.plot(steps, cols[1], label='validation', color='k')
-	    plt.legend(handles=[line_up, line_down])
-	    plt.savefig(evals_dir + m + '.png')
-	    plt.close()
+        cols = []
+        for y in ['orientation', 'blurry']:
+            for path in [evals_dir + 'log_' + y + '_train_small.txt', evals_dir + 'log_' + y + '_validation.txt']:
+                lines = open(path).readlines()
+                cols += [metric_list(m, lines)]
+                steps = metric_list('step', lines, True)
+            fig = plt.figure()
+            fig.suptitle(m)
+            line_up, = plt.plot(steps, cols[0], '--', label='training', color='k')
+            line_down, = plt.plot(steps, cols[1], label='validation', color='k')
+            plt.legend(handles=[line_up, line_down])
+            plt.savefig(evals_dir + m + '_' + y + '.jpg')
+            plt.close()
 
 
 def save_metrics(path, confu, orig_stdout, n):
@@ -258,13 +262,38 @@ def get_batch(file_list, lab_list, is_train, id_file=None):
         fnames = [file_list[id_file]]
         labs = np.array([lab_list[id_file]])
     crops = []
-    for f in fnames:
+    labs_blurry = []
+    for m, f in enumerate(fnames):
         crop = cv2.imread(f)[..., ::-1]
         crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
         crop = crop.astype(np.float32)
-        if is_train and params.AUGMENT:
-            crop = augment_tr(crop)
+        kernel = randint(5, 9)
+        kernel_m = randint(7, 25)
+        if is_train:
+            if m % 2 == 0:  # for half of the batch, we do blurring and change the label to not ok
+                which_blur = randint(0, 1)
+                if which_blur:
+                    crop = blur(crop, kernel)
+                else:
+                    crop = motion_blur(crop, kernel_m)
+                labs_blurry += [[0.0, 1.0]]
+            else:
+                labs_blurry += [[1.0, 0.0]]
+            if params.AUGMENT:
+                crop = augment_tr(crop)
+        else:
+            blurring = id_file % 2 == 0  # one eval sample over 2
+            if blurring:
+                which_blur = randint(0, 1)
+                if which_blur:
+                    crop = blur(crop, kernel)
+                else:
+                    crop = motion_blur(crop, kernel_m)
+                labs_blurry = [[0.0, 1.0]]
+            else:
+                labs_blurry = [[1.0, 0.0]]
         crop /= 255.0
         crops += [crop]
     crops = np.array(crops)
-    return crops, labs
+    labs_blurry = np.array(labs_blurry)
+    return crops, labs, labs_blurry

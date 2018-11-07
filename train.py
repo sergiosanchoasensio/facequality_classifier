@@ -31,9 +31,10 @@ def run(restore_path=None, show_images=False):
 
             crops = tf.placeholder(dtype=tf.float32, shape=[None, params.OUT_HEIGHT, params.OUT_WIDTH, 3])  # dimension 0 = None makes the placeholder flexible for batch size
             labels = tf.placeholder(dtype=tf.float32, shape=[None, len(params.LABELS)])
+            labels_blur = tf.placeholder(dtype=tf.float32, shape=[None, len(params.LABELS_BLUR)])
 
-            preds_out, feat_out, weights, image_out, labels_out = arch.inference(crops, labels, True)
-            loss = train_core.loss(preds_out, labels_out, feat_out, weights)
+            preds_out, preds_out_blur, feat_out, weights, image_out, labels_out, labels_out_blur = arch.inference(crops, labels, labels_blur, True)
+            loss = train_core.loss(labels_out, preds_out, labels_out_blur, preds_out_blur, feat_out, weights)
             train_op = train_core.train(loss, global_step, params.N_BOX_TR)
     
             init_op = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
@@ -68,20 +69,20 @@ def run(restore_path=None, show_images=False):
 
                 for n in xrange(params.MAX_STEPS):
 
-                    cr, lab = tools.get_batch(params.tr_files, params.tr_labels, is_train=True)
-                    
+                    cr, lab, lab_b = tools.get_batch(params.tr_files, params.tr_labels, is_train=True)
+
                     if show_images:
                         from scipy.misc import imshow
                         for j in range(params.BATCH_SIZE):
                             im = cr[j]
-                            print lab[j]
+                            print params.LABELS_BLUR[np.argmax(lab_b[j])], params.LABELS[np.argmax(lab[j])]
                             imshow(im)
 
-                    t_s, loss_tr, im_out, po = sess.run([train_op, loss, image_out, preds_out], feed_dict={crops: cr, labels: lab})
+                    t_s, loss_tr = sess.run([train_op, loss], feed_dict={crops: cr, labels: lab, labels_blur: lab_b})
 
                     if n % 100 == 0:
                         print str(n) + ':', loss_tr
-                        summary_str_gen = sess.run(merged_summary_op_gen, feed_dict={crops: cr, labels: lab})
+                        summary_str_gen = sess.run(merged_summary_op_gen, feed_dict={crops: cr, labels: lab, labels_blur: lab_b})
                         summary_writer.add_summary(summary_str_gen, n)
 
                     if n == 1000:
@@ -96,6 +97,7 @@ def run(restore_path=None, show_images=False):
                         print 'Evaluating...'
                         for val_set in [True, False]:
                             confu = np.zeros([len(params.LABELS), len(params.LABELS)], dtype=np.int32)
+                            confu_b = np.zeros([len(params.LABELS_BLUR), len(params.LABELS_BLUR)], dtype=np.int32)
                             if val_set:
                                 N = params.N_BOX_VAL
                                 files = params.val_files
@@ -107,13 +109,17 @@ def run(restore_path=None, show_images=False):
                                 labs = params.ts_labels
                                 s = 'train_small'
                             for j in range(N):
-                                cr_, lab_ = tools.get_batch(files, labs, is_train=False, id_file=j)
-                                po = sess.run(preds_out, feed_dict={crops: cr_, labels: lab_})
+                                cr_, lab_, lab_b_ = tools.get_batch(files, labs, is_train=False, id_file=j)
+                                po, po_b = sess.run([preds_out, preds_out_blur], feed_dict={crops: cr_, labels: lab_, labels_blur: lab_b_})
                                 label = np.argmax(lab_)
                                 pred = np.argmax(po)
                                 confu[label, pred] += 1
+                                label_b = np.argmax(lab_b_)
+                                pred_b = np.argmax(po_b)
+                                confu_b[label_b, pred_b] += 1
                             orig_stdout = sys.stdout
-                            tools.save_metrics(evals_dir + 'log_' + s + '.txt', confu, orig_stdout, n)
+                            tools.save_metrics(evals_dir + 'log_orientation_' + s + '.txt', confu, orig_stdout, n)
+                            tools.save_metrics(evals_dir + 'log_blurry_' + s + '.txt', confu_b, orig_stdout, n)
                         tools.compare_val_ts(evals_dir)
 
                 coord.request_stop()
