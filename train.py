@@ -10,7 +10,6 @@ import train_core
 import numpy as np
 import sys
 import tensorflow.contrib.slim as slim
-from time import time
 from joblib import Parallel, delayed
 
 
@@ -85,7 +84,7 @@ def run(restore_path=None, show_images=False):
 
                     t_s, loss_tr = sess.run([train_op, loss], feed_dict={crops: cr, labels: lab, labels_blur: lab_b})
 
-                    if n % 100 == 0:
+                    if n % 10 == 0:
                         print str(n) + ':', loss_tr
                         summary_str_gen = sess.run(merged_summary_op_gen, feed_dict={crops: cr, labels: lab, labels_blur: lab_b})
                         summary_writer.add_summary(summary_str_gen, n)
