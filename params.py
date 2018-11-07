@@ -101,7 +101,7 @@ NEW_VARIABLES = []
 
 TRAINABLE_VARIABLES = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'conv6', 'conv7', 'fc8', 'outSoftmax']
 
-EVA_FREQ = 2
+EVA_FREQ = 1000
 
 LAMBDA_ORIENTATION = 0.5  # how much importance we give to the orientation in the loss
 LAMBDA_BLUR = 0.5
