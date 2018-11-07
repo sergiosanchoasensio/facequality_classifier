@@ -1,1 +1,1 @@
-Car classifier for sub-categories and colors
+Pose classifier for faces
