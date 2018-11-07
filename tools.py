@@ -1,3 +1,4 @@
+import cv2
 import tensorflow as tf
 import os
 import shutil
@@ -6,6 +7,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import ast
+from augmentations_np import augment_tr
 
 
 def hflip_imgs(image):
@@ -245,3 +247,20 @@ def def_init_sttdev(activation_function, input_n_feat, set_max=None):
         stddev = np.minimum(stddev, set_max)
 
     return stddev
+
+
+def get_batch(file_list, lab_list, augment=False):
+    idx = np.random.choice(len(file_list), params.BATCH_SIZE)
+    fnames = [f for j, f in enumerate(file_list) if j in idx]
+    crops = []
+    for f in fnames:
+        crop = cv2.imread(f)[..., ::-1]
+        crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
+        crop = crop.astype(np.float32)
+        if augment:
+            crop = augment_tr(crop)
+        crop /= 255.0
+        crops += [crop]
+    crops = np.array(crops)
+    labs = np.array([f for j, f in enumerate(lab_list) if j in idx])
+    return crops, labs

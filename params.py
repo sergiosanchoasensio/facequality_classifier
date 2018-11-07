@@ -2,9 +2,12 @@ import time
 import datetime
 import os
 import numpy as np
+import pandas as pd
+import ast
+from sklearn.utils import shuffle
 
 
-BATCH_SIZE = 128
+BATCH_SIZE = 16
 MAX_STEPS = int(1e+8)
 L2_WEIGHT_DECAY = 1e-1 #None # 1e-3
 L2_WEIGHT_DECAY_SOFTMAX = 1e-1 # None # 1e-3
@@ -16,21 +19,16 @@ DECAY_STEPS = 15000
 LEARNING_RATE_DECAY_FACTOR = 0.9
 LAMBDAortho = 0.0
 
-AUGMENT = False
-DATA_AUG_P_gamma = 0.005
-DATA_AUG_P_blur = 0.0
-DATA_AUG_P_flip = 0.5
-DATA_AUG_P_light = 0.005
-DATA_AUG_P_chroma = 0.005
-DATA_AUG_P_lowres = 0.4
-DATA_AUG_P_shittybox = 0.3
-DATA_AUG_P_rndpatch = 0.1
+AUGMENT = True
+PR_RANDOM_CROP = 15  # probability to activate the augmentation (i.e. 15%)
+PR_LOW_RES = 15
+PR_RANDOM_PATCH = 15
 
 USE_TEMPORAL_INFO = False
 ADAM_B1 = 0.9
 
 DEVICE = {}
-DEVICE['cuda_id'] = '0'  # for Thomas' machine, 0 = TITAN, 1 = GTX750
+DEVICE['cuda_id'] = '1'  # for Thomas' machine, 0 = TITAN, 1 = GTX750
 DEVICE['tf_id'] = '/gpu:' + DEVICE['cuda_id']
 if DEVICE['cuda_id']:
     os.environ["CUDA_VISIBLE_DEVICES"] = DEVICE['cuda_id']
@@ -57,28 +55,45 @@ NUM_EPOCHS_PER_DECAY = 36
 
 LABELS = ['high_quality', 'low_quality']
 
+DATA_LIST = MAIN_PATH + 'XGBoost_pred_on_vggface2_test.csv'
+data = pd.read_csv(DATA_LIST)
+data = shuffle(data, random_state=0)
+tr_files = list(data['image_path'][data['hand_labeled'] == False])
+val_files = list(data['image_path'][data['hand_labeled'] == True])
+tr_labels = data['orientation'][data['hand_labeled'] == False]
+tr_labels = [ast.literal_eval(t) for t in tr_labels]
+tr_labels = np.array([[int(t[x]) for x in t] for t in tr_labels]).astype(np.float32)
+val_labels = data['orientation'][data['hand_labeled'] == True]
+val_labels = [ast.literal_eval(v) for v in val_labels]
+val_labels = np.array([[int(v[x]) for x in v] for v in val_labels]).astype(np.float32)
+ts_files = tr_files[:500]
+ts_labels = tr_labels[:500]
+if len(LABELS) < 3:  # simplify labelling
+    tr_labels_ = []
+    for t in tr_labels:
+        if t[0] == 1:
+            tr_labels_ += [[1.0, 0.0]]
+        else:
+            tr_labels_ += [[0.0, 1.0]]
+    tr_labels = tr_labels_
+    val_labels_ = []
+    for t in val_labels:
+        if t[0] == 1:
+            val_labels_ += [[1.0, 0.0]]
+        else:
+            val_labels_ += [[0.0, 1.0]]
+    val_labels = val_labels_
+    ts_labels_ = []
+    for t in ts_labels:
+        if t[0] == 1:
+            ts_labels_ += [[1.0, 0.0]]
+        else:
+            ts_labels_ += [[0.0, 1.0]]
+    ts_labels = ts_labels_
 
-#N_COL = np.sum(COUNT_COLORS)  # number of bounding boxes with color
-#N_SUB = np.sum(COUNT_SUBCATS)
-#LAMBDA_COLOR = N_SUB / (N_SUB + N_COL)
-#LAMBDA_CAT = 1. - LAMBDA_COLOR
-
-RECORDS_PATH = MAIN_PATH + 'tfrecords/'
-TRAIN_LIST = MAIN_PATH + 'checknewtrain' # 44k
-VAL_LIST = MAIN_PATH + 'checknewtrain' # 0.5k
-TRAIN_SMALL_LIST = MAIN_PATH + 'checknewtrain' # 0.5k
-
-
-
-i = 0
-for i, l in enumerate(open(TRAIN_LIST)): pass
-N_BOX_TR = i + 1
-i = 0
-for i, l in enumerate(open(VAL_LIST)): pass
-N_BOX_VAL = i + 1
-i = 0
-for i, l in enumerate(open(TRAIN_SMALL_LIST)): pass
-N_BOX_TS = i + 1
+N_BOX_TR = len(tr_files)
+N_BOX_VAL = len(val_files)
+N_BOX_TS = len(ts_files)
 
 NEW_VARIABLES = []
 

@@ -14,6 +14,7 @@ from os import listdir
 from os.path import isfile, join
 from augmentations import data_augment
 import tensorflow.contrib.slim as slim
+import cv2
 
 
 def start_tboard():
@@ -94,17 +95,8 @@ def run(restore_path=None, show_images=False):
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False)
 
-            is_train = tf.placeholder(dtype='bool', shape=[])
-            is_val_set = tf.placeholder(dtype='bool', shape=[])
-
-            crops_tr, labels_tr = read_and_decode(params.TRAIN_LIST, is_train=True, global_step=global_step)
-            crops_val, labels_val = read_and_decode(params.VAL_LIST, is_train=False, global_step=global_step)
-            crops_ts, labels_ts = read_and_decode(params.TRAIN_SMALL_LIST, is_train=False, global_step=global_step)
-
-            crops, labels = \
-                tf.cond(is_train, lambda: (crops_tr, labels_tr),
-                                  lambda: tf.cond(is_val_set, lambda: (crops_val, labels_val),
-                                                              lambda: (crops_ts, labels_ts)))
+            crops = tf.placeholder(dtype=tf.float32, shape=[params.BATCH_SIZE, params.OUT_HEIGHT, params.OUT_WIDTH, 3])
+            labels = tf.placeholder(dtype=tf.float32, shape=[params.BATCH_SIZE, len(params.LABELS)])
 
             preds_out, feat_out, weights, image_out, labels_out = arch.inference(crops, labels, True)
             loss = train_core.loss(preds_out, labels_out, feat_out, weights)
@@ -116,18 +108,18 @@ def run(restore_path=None, show_images=False):
 
             summary_writer = tf.summary.FileWriter(params.LOGS_PATH, graph=tf.get_default_graph())
 
-	    config = tf.ConfigProto(allow_soft_placement=True)
-	    
-	    if restore_path is not None:
-	    	variables = slim.get_variables_to_restore()
-	    	variables_to_restore = [v for v in variables if (v.name.split('/')[0] not in params.NEW_VARIABLES) and ('ExponentialMovingAverage' not in v.name) and ('Adam' not in v.name)] 
-	    	loader = tf.train.Saver(variables_to_restore)
+            config = tf.ConfigProto(allow_soft_placement=True)
 
- 	    saver = tf.train.Saver(max_to_keep=5000)
+            if restore_path is not None:
+                variables = slim.get_variables_to_restore()
+                variables_to_restore = [v for v in variables if (v.name.split('/')[0] not in params.NEW_VARIABLES) and ('ExponentialMovingAverage' not in v.name) and ('Adam' not in v.name)]
+                loader = tf.train.Saver(variables_to_restore)
+
+            saver = tf.train.Saver(max_to_keep=5000)
 
             with tf.Session(config=config) as sess:
 
-                sess.run(init_op, feed_dict={is_train: True, is_val_set: True})
+                sess.run(init_op)
 
                 if restore_path is not None:
                     loader.restore(sess, restore_path)
@@ -141,16 +133,17 @@ def run(restore_path=None, show_images=False):
                     os.makedirs(evals_dir)
 
                 for n in xrange(params.MAX_STEPS):
+
+                    cr, lab = tools.get_batch(params.tr_files, params.tr_labels, params.AUGMENT)
                     
                     if show_images:
                         from scipy.misc import imshow
-                        i, l = sess.run([crops_tr, labels_tr])
                         for j in range(params.BATCH_SIZE):
-                            im = i[j]
-                            print l[j]
+                            im = cr[j]
+                            print lab[j]
                             imshow(im)
 #                    
-                    t_s, loss_tr, im_out, lo = sess.run([train_op, loss, image_out, preds_out], feed_dict={is_train: True, is_val_set: True})
+                    t_s, loss_tr, im_out, lo = sess.run([train_op, loss, image_out, preds_out], feed_dict={crops: cr, labels: lab})
 
                     if n % 100 == 0:
                         print str(n) + ':', loss_tr
@@ -172,6 +165,8 @@ def run(restore_path=None, show_images=False):
 
                             for j in range(params.N_BOX_VAL):
                                     cs, lo, po = sess.run([crops, labels_out, preds_out], feed_dict={is_train: False, is_val_set: val_set})
+                                    po = sess.run(preds_out, feed_dict={crops: cr_, labels: lab_})
+
                                     label = np.argmax(lo)
                                     pred = np.argmax(po)
                                     confu[label, pred] += 1
@@ -187,7 +182,7 @@ def run(restore_path=None, show_images=False):
 
 if __name__ == '__main__':
     start_tboard()
-    run(show_images=False)
+    run(show_images=True)
 
 
 
