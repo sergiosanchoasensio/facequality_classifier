@@ -161,14 +161,14 @@ def inference(images, labels, labels_blur, trainval_flag):
 
     n_feat = {}
 
-    n_feat['conv1'] = 32
-    n_feat['conv2'] = 64
-    n_feat['conv3'] = 96
-    n_feat['conv4'] = 192
-    n_feat['conv5'] = 192
-    n_feat['conv6'] = 128
-    n_feat['conv7'] = 128
-    n_feat['fc8'] = 64
+    n_feat['conv1'] = 16#32
+    n_feat['conv2'] = 32#64
+    n_feat['conv3'] = 32#96
+    n_feat['conv4'] = 32#192
+    n_feat['conv5'] = 64#192
+    n_feat['conv6'] = 64#128
+    n_feat['conv7'] = 64#128
+    n_feat['fc8'] = 32#64
     #  n_feat['fc9'] = 64
 
 

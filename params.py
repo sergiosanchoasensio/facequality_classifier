@@ -7,7 +7,7 @@ import ast
 from sklearn.utils import shuffle
 
 
-BATCH_SIZE = 16
+BATCH_SIZE = 64
 MAX_STEPS = int(1e+8)
 L2_WEIGHT_DECAY = 1e-1
 L2_WEIGHT_DECAY_SOFTMAX = 1e-1

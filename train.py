@@ -71,17 +71,10 @@ def run(restore_path=None, show_images=False):
 
                 for n in xrange(params.MAX_STEPS):
 
-                    t0 = time()
-
                     fnames, lab = tools.get_batch_names(params.tr_files, params.tr_labels, is_train=True)
                     res = Parallel(n_jobs=16, backend="threading")(delayed(tools.get_batch_parallel)(v, u, is_train=True) for u, v in enumerate(fnames))
                     cr = np.array([r[0] for r in res])
                     lab_b = np.squeeze([r[1] for r in res])
-
-                    # cr, lab, lab_b = tools.get_batch(params.tr_files, params.tr_labels, is_train=True)
-
-                    t1 = time()
-                    print 'get batch time:', t1 - t0
 
                     if show_images:
                         from scipy.misc import imshow
