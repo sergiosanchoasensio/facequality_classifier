@@ -55,19 +55,20 @@ NUM_EPOCHS_PER_DECAY = 36
 
 LABELS = ['high_quality', 'low_quality']
 
+eval_size = 500
 DATA_LIST = MAIN_PATH + 'XGBoost_pred_on_vggface2_test.csv'
 data = pd.read_csv(DATA_LIST)
 data = shuffle(data, random_state=0)
 tr_files = list(data['image_path'][data['hand_labeled'] == False])
-val_files = list(data['image_path'][data['hand_labeled'] == True])
+val_files = list(data['image_path'][data['hand_labeled'] == True])[:eval_size]  # sub sample validation
 tr_labels = data['orientation'][data['hand_labeled'] == False]
 tr_labels = [ast.literal_eval(t) for t in tr_labels]
 tr_labels = np.array([[int(t[x]) for x in t] for t in tr_labels]).astype(np.float32)
 val_labels = data['orientation'][data['hand_labeled'] == True]
 val_labels = [ast.literal_eval(v) for v in val_labels]
-val_labels = np.array([[int(v[x]) for x in v] for v in val_labels]).astype(np.float32)
-ts_files = tr_files[:500]
-ts_labels = tr_labels[:500]
+val_labels = np.array([[int(v[x]) for x in v] for v in val_labels]).astype(np.float32)[:eval_size]
+ts_files = tr_files[:eval_size]
+ts_labels = tr_labels[:eval_size]
 if len(LABELS) < 3:  # simplify labelling
     tr_labels_ = []
     for t in tr_labels:
@@ -99,3 +100,4 @@ NEW_VARIABLES = []
 
 TRAINABLE_VARIABLES = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', 'conv6', 'conv7', 'fc8', 'outSoftmax']
 
+EVA_FREQ = 1000

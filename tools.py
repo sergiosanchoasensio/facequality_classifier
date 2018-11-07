@@ -249,18 +249,22 @@ def def_init_sttdev(activation_function, input_n_feat, set_max=None):
     return stddev
 
 
-def get_batch(file_list, lab_list, augment=False):
-    idx = np.random.choice(len(file_list), params.BATCH_SIZE)
-    fnames = [f for j, f in enumerate(file_list) if j in idx]
+def get_batch(file_list, lab_list, is_train, id_file=None):
+    if is_train:
+        idx = np.random.choice(len(file_list), params.BATCH_SIZE)
+        fnames = [f for j, f in enumerate(file_list) if j in idx]
+        labs = np.array([f for j, f in enumerate(lab_list) if j in idx])
+    else:
+        fnames = [file_list[id_file]]
+        labs = np.array([lab_list[id_file]])
     crops = []
     for f in fnames:
         crop = cv2.imread(f)[..., ::-1]
         crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
         crop = crop.astype(np.float32)
-        if augment:
+        if is_train and params.AUGMENT:
             crop = augment_tr(crop)
         crop /= 255.0
         crops += [crop]
     crops = np.array(crops)
-    labs = np.array([f for j, f in enumerate(lab_list) if j in idx])
     return crops, labs

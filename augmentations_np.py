@@ -19,14 +19,14 @@ def random_crop(image):
     x2 = np.random.randint(width - crop_width, width)
     y1 = np.random.randint(0, crop_height)
     y2 = np.random.randint(height - crop_height, height)
-    return image[x1:x2, y1:y2]
+    return cv2.resize(image[x1:x2, y1:y2], (params.OUT_WIDTH, params.OUT_HEIGHT))
 
 
 def lower_resolution(image):
     scale = random.uniform(0.3, 0.9)
     new_width = int(image.shape[1] * scale)
     new_height = int(image.shape[0] * scale)
-    return cv2.resize(image, (new_width, new_height))
+    return cv2.resize(cv2.resize(image, (new_width, new_height)), (params.OUT_WIDTH, params.OUT_HEIGHT))
 
 
 def random_patch(image):
