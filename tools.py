@@ -267,6 +267,7 @@ def get_batch(file_list, lab_list, is_train, id_file=None):
         crop = cv2.imread(f)[..., ::-1]
         crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
         crop = crop.astype(np.float32)
+        crop /= 255.0
         kernel = randint(5, 9)
         kernel_m = randint(7, 25)
         if is_train:
@@ -292,7 +293,8 @@ def get_batch(file_list, lab_list, is_train, id_file=None):
                 labs_blurry = [[0.0, 1.0]]
             else:
                 labs_blurry = [[1.0, 0.0]]
-        crop /= 255.0
+        adjusted_stddev = np.maximum(np.std(crop), 1.0 / params.N_ELEMENTS)
+        crop = (crop - np.mean(crop)) / adjusted_stddev
         crops += [crop]
     crops = np.array(crops)
     labs_blurry = np.array(labs_blurry)
@@ -314,6 +316,7 @@ def get_batch_parallel(f, m, is_train, id_file=None):
     crop = cv2.imread(f)[..., ::-1]
     crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
     crop = crop.astype(np.float32)
+    crop /= 255.0
     kernel = randint(5, 9)
     kernel_m = randint(7, 25)
     if is_train:
@@ -339,5 +342,6 @@ def get_batch_parallel(f, m, is_train, id_file=None):
             labs_blurry = [[0.0, 1.0]]
         else:
             labs_blurry = [[1.0, 0.0]]
-    crop /= 255.0
+    adjusted_stddev = np.maximum(np.std(crop), 1.0 / params.N_ELEMENTS)
+    crop = (crop - np.mean(crop)) / adjusted_stddev
     return crop, labs_blurry

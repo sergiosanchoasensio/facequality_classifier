@@ -105,3 +105,5 @@ EVA_FREQ = 1000
 
 LAMBDA_ORIENTATION = 0.5  # how much importance we give to the orientation in the loss
 LAMBDA_BLUR = 0.5
+
+N_ELEMENTS = np.sqrt(OUT_HEIGHT * OUT_WIDTH * 3)
