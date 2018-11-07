@@ -297,3 +297,47 @@ def get_batch(file_list, lab_list, is_train, id_file=None):
     crops = np.array(crops)
     labs_blurry = np.array(labs_blurry)
     return crops, labs, labs_blurry
+
+
+def get_batch_names(file_list, lab_list, is_train, id_file=None):
+    if is_train:
+        idx = np.random.choice(len(file_list), params.BATCH_SIZE)
+        fnames = [f for j, f in enumerate(file_list) if j in idx]
+        labs = np.array([f for j, f in enumerate(lab_list) if j in idx])
+    else:
+        fnames = [file_list[id_file]]
+        labs = np.array([lab_list[id_file]])
+    return fnames, labs
+
+
+def get_batch_parallel(f, m, is_train, id_file=None):
+    crop = cv2.imread(f)[..., ::-1]
+    crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
+    crop = crop.astype(np.float32)
+    kernel = randint(5, 9)
+    kernel_m = randint(7, 25)
+    if is_train:
+        if m % 2 == 0:  # for half of the batch, we do blurring and change the label to not ok
+            which_blur = randint(0, 1)
+            if which_blur:
+                crop = blur(crop, kernel)
+            else:
+                crop = motion_blur(crop, kernel_m)
+            labs_blurry = [[0.0, 1.0]]
+        else:
+            labs_blurry = [[1.0, 0.0]]
+        if params.AUGMENT:
+            crop = augment_tr(crop)
+    else:
+        blurring = id_file % 2 == 0  # one eval sample over 2
+        if blurring:
+            which_blur = randint(0, 1)
+            if which_blur:
+                crop = blur(crop, kernel)
+            else:
+                crop = motion_blur(crop, kernel_m)
+            labs_blurry = [[0.0, 1.0]]
+        else:
+            labs_blurry = [[1.0, 0.0]]
+    crop /= 255.0
+    return crop, labs_blurry

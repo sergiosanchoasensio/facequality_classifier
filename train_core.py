@@ -30,10 +30,7 @@ def loss(labels, preds, labels_blur, preds_blur, features_out, w_to_reg=[]):
     loss_orientation = sym_cross_entropy(labels, preds)
     loss_orientation = tf.reduce_mean(loss_orientation, 0)
     loss_orientation = tf.identity(loss_orientation, name='loss_ce_orientation')
-    try:
-        loss_blur = sym_cross_entropy(labels_blur, preds_blur)
-    except:
-        import pdb;pdb.set_trace()
+    loss_blur = sym_cross_entropy(labels_blur, preds_blur)
     loss_blur = tf.reduce_mean(loss_blur, 0)
     loss_blur = tf.identity(loss_blur, name='loss_ce_blur')
     loss = params.LAMBDA_ORIENTATION * loss_orientation + params.LAMBDA_BLUR * loss_blur
