@@ -28,7 +28,7 @@ USE_TEMPORAL_INFO = False
 ADAM_B1 = 0.9
 
 DEVICE = {}
-DEVICE['cuda_id'] = '1'  # for Thomas' machine, 0 = TITAN, 1 = GTX750
+DEVICE['cuda_id'] = '0'  # for Thomas' machine, 0 = TITAN, 1 = GTX750
 DEVICE['tf_id'] = '/gpu:' + DEVICE['cuda_id']
 if DEVICE['cuda_id']:
     os.environ["CUDA_VISIBLE_DEVICES"] = DEVICE['cuda_id']
