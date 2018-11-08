@@ -28,7 +28,7 @@ USE_TEMPORAL_INFO = False
 ADAM_B1 = 0.9
 
 DEVICE = {}
-DEVICE['cuda_id'] = '1'  # for Thomas' machine, 0 = TITAN, 1 = GTX750
+DEVICE['cuda_id'] = '0'  # for Thomas' machine, 0 = TITAN, 1 = GTX750
 DEVICE['tf_id'] = '/gpu:' + DEVICE['cuda_id']
 if DEVICE['cuda_id']:
     os.environ["CUDA_VISIBLE_DEVICES"] = DEVICE['cuda_id']
@@ -92,6 +92,9 @@ if len(LABELS) < 3:  # simplify labelling
         else:
             ts_labels_ += [[0.0, 1.0]]
     ts_labels = ts_labels_
+files_labs_tr = zip(tr_files, tr_labels)
+files_labs_val = zip(val_files, val_labels)
+files_labs_ts = zip(ts_files, ts_labels)
 
 N_BOX_TR = len(tr_files)
 N_BOX_VAL = len(val_files)

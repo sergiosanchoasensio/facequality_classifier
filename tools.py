@@ -8,7 +8,7 @@ import sys
 import matplotlib.pyplot as plt
 import ast
 from augmentations_np import augment_tr, blur, motion_blur
-from random import randint
+from random import randint, sample
 
 
 np.random.seed(0)
@@ -301,14 +301,10 @@ def get_batch(file_list, lab_list, is_train, id_file=None):
     return crops, labs, labs_blurry
 
 
-def get_batch_names(file_list, lab_list, is_train, id_file=None):
-    if is_train:
-        idx = np.random.choice(len(file_list), params.BATCH_SIZE)
-        fnames = [f for j, f in enumerate(file_list) if j in idx]
-        labs = np.array([f for j, f in enumerate(lab_list) if j in idx])
-    else:
-        fnames = [file_list[id_file]]
-        labs = np.array([lab_list[id_file]])
+def get_batch_names(files_labs):
+    sub_files_labs = sample(files_labs, params.BATCH_SIZE)
+    fnames = [sf[0] for sf in sub_files_labs]
+    labs = [sf[1] for sf in sub_files_labs]
     return fnames, labs
 
 
