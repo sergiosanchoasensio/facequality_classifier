@@ -312,8 +312,7 @@ def get_batch_parallel(f, m, is_train, id_file=None):
     crop = cv2.imread(f)[..., ::-1]
     crop = cv2.resize(crop, (params.OUT_WIDTH, params.OUT_HEIGHT))
     crop = crop.astype(np.float32)
-    crop /= 255.0
-    kernel = randint(5, 9)
+    kernel = randint(7, 10)
     kernel_m = randint(7, 25)
     if is_train:
         if m % 2 == 0:  # for half of the batch, we do blurring and change the label to not ok
@@ -339,5 +338,6 @@ def get_batch_parallel(f, m, is_train, id_file=None):
         else:
             labs_blurry = [[1.0, 0.0]]
     adjusted_stddev = np.maximum(np.std(crop), 1.0 / params.N_ELEMENTS)
+    crop /= 255.0
     crop = (crop - np.mean(crop)) / adjusted_stddev
     return crop, labs_blurry
