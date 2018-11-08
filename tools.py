@@ -103,8 +103,8 @@ def metric_list(metric, lines, steps=False):
 def compare_val_ts(evals_dir):
     metrics = ['Accuracy', 'Average precision', 'Average sensitivity', 'Average F1']
     for m in metrics:
-        cols = []
         for y in ['orientation', 'blurry']:
+            cols = []
             for path in [evals_dir + 'log_' + y + '_train_small.txt', evals_dir + 'log_' + y + '_validation.txt']:
                 lines = open(path).readlines()
                 cols += [metric_list(m, lines)]
